@@ -1,0 +1,184 @@
+---
+title: "Final Project"
+author: "Dave Arthur"
+date: "2024-12-11"
+output: html_document
+---
+```{r}
+library(ggplot2)
+library(dplyr)
+library(readr) 
+library(forcats) 
+library(tidyverse)
+library(ggpath)
+library(corrr)
+library(pak)
+library(ggthemes)
+
+library(showtext) # Useful for last problem
+
+# Create a function to allow added fonts from the showtext library
+showtext_auto()
+
+# Font similar to NU's Akkurat Pro font
+font_add_google("Assistant", "assistant")
+```
+
+```{r}
+cbb_data <- read.csv("cbb19.csv")
+```
+
+```{r}
+# Rename categories in POSTSEASON variable so that graph legend is more readable
+cbb_data$POSTSEASON[is.na(cbb_data$POSTSEASON)] <- "Missed NCAA Tournament"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "Champions"] <- "Champion"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "2ND"] <- "Runner-Up"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "F4"] <- "Final Four"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "E8"] <- "Elite 8"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "S16"] <- "Sweet 16"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "R32"] <- "Round of 32"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "R64"] <- "Round of 64"
+cbb_data$POSTSEASON[cbb_data$POSTSEASON == "R68"] <- "First Four"
+```
+
+```{r}
+ggplot(data = cbb_data, aes(x = ADJOE, y = ADJDE, color = POSTSEASON)) +
+  geom_point() +
+  guides(color = guide_legend(title = "NCAA Tournament Result")) +
+  theme_minimal() +
+  xlab("Adjusted Offensive Efficiency") +
+  ylab("Adjusted Defensive Efficiency") +
+  ggtitle("Adjusted Offensive Efficiency vs. Adjusted Defensive Efficiency Depending on NCAA Tournament Result") +
+  scale_color_manual(breaks = c("Champion", "Runner-Up", "Final Four", "Elite 8", "Sweet 16", "Round of 32", "Round of 64", "First Four", "Missed NCAA Tournament"), 
+                     values = c("gold", "orange", "orangered", "darkred", "pink", "violet", "purple",  "darkslateblue", "gray1")) +
+  theme(text = element_text(family = "assistant", color = "#009CDE"),
+    legend.key = element_rect(color = "black"),
+    panel.background = element_rect(fill = "#EFF8FD"),
+    panel.border = element_rect(color = "black", fill = NA),
+    plot.background = element_rect(fill = "#FDF4E5"),
+    legend.background = element_rect(fill = "#FBDCAD", color = "black"),
+    plot.title = element_text(size = 28),
+    legend.text = element_text(size = 16),
+    legend.title = element_text(size = 20),
+    axis.text.x = element_text(size = 16),
+    axis.text.y = element_text(size = 16),
+    axis.title.x = element_text(size = 22),
+    axis.title.y = element_text(size = 22))
+```
+```{r}
+made_tournament_data <- read.csv("cbb19.csv")
+```
+
+
+```{r}
+# Rename categories in POSTSEASON variable to a value of 1 for making the tournament and a value of 0 for not
+made_tournament_data$POSTSEASON[is.na(made_tournament_data$POSTSEASON)] <- 0.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "Champions"] <- 1.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "2ND"] <- 1.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "F4"] <- 1.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "E8"] <- 1.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "S16"] <- 1.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "R32"] <- 1.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "R64"] <- 1.0
+made_tournament_data$POSTSEASON[made_tournament_data$POSTSEASON == "R68"] <- 1.0
+```
+
+```{r}
+made_tournament_data$POSTSEASON <- as.numeric(made_tournament_data$POSTSEASON)
+```
+
+
+```{r}
+ncaat_corrs <- made_tournament_data %>%
+                correlate() %>%
+                focus(POSTSEASON)
+
+# Delete null row
+ncaat_corrs <- ncaat_corrs[-c(20),]
+
+ncaat_corrs_ordered <- ncaat_corrs[order(ncaat_corrs$POSTSEASON),]
+```
+
+```{r}
+ggplot(data = ncaat_corrs, aes(x = term, y = POSTSEASON)) +
+  geom_col(fill = "#009CDE") +
+  scale_x_discrete(limits = ncaat_corrs_ordered$term) +
+  theme_minimal() +
+  xlab("Variable") +
+  ylab("Correlation") +
+  ggtitle("Correlation of Various Data Categories with Teams that Make NCAA Tournament") +
+  scale_y_continuous(limits = c(-1, 1), expand = c(0, 0)) +
+  theme(axis.text.x = element_text(face = "bold", size = 10, angle = 60, vjust = 1, hjust = 1))
+```
+
+```{r}
+# Calculate how WAB has to do with seed
+seed_data <- read.csv("cbb19.csv")
+```
+```{r}
+seed_data$SEED[is.na(seed_data$SEED)] <- "Missed Tournament"
+seed_data$SEED[seed_data$SEED == 1] <- "Top 4 Seed"
+seed_data$SEED[seed_data$SEED == 2] <- "Top 4 Seed"
+seed_data$SEED[seed_data$SEED == 3] <- "Top 4 Seed"
+seed_data$SEED[seed_data$SEED == 4] <- "Top 4 Seed"
+seed_data$SEED[seed_data$SEED == 5] <- "5-8 Seed"
+seed_data$SEED[seed_data$SEED == 6] <- "5-8 Seed"
+seed_data$SEED[seed_data$SEED == 7] <- "5-8 Seed"
+seed_data$SEED[seed_data$SEED == 8] <- "5-8 Seed"
+seed_data$SEED[seed_data$SEED == 9] <- "Bubble In"
+seed_data$SEED[seed_data$SEED == 10] <- "Bubble In"
+seed_data$SEED[seed_data$SEED == 11] <- "Bubble In"
+seed_data$SEED[seed_data$SEED == 12] <- "Automatic Bid"
+seed_data$SEED[seed_data$SEED == 13] <- "Automatic Bid"
+seed_data$SEED[seed_data$SEED == 14] <- "Automatic Bid"
+seed_data$SEED[seed_data$SEED == 15] <- "Automatic Bid"
+seed_data$SEED[seed_data$SEED == 16] <- "Automatic Bid"
+
+```
+
+```{r}
+ggplot(seed_data, aes(x = WAB)) +
+  geom_density(aes(color = SEED, fill = SEED), alpha = 0.5) +
+  theme_minimal() +
+  labs(x = "Wins Above Bubble",
+       y = "Density") +
+  ggtitle("Density of Wins Above Bubble by Seed in 2019 NCAA Tournament") +
+  scale_fill_manual(breaks = c("Top 4 Seed", "5-8 Seed", "Bubble In", "Automatic Bid", "Missed Tournament"), 
+                     values = c("gold1", "orangered", "pink", "#009CDE", "gray1"),
+                    name = "Seed Category") +
+  scale_color_manual(breaks = c("Top 4 Seed", "5-8 Seed", "Bubble In", "Automatic Bid", "Missed Tournament"), 
+                     values = c("black", "black", "black", "black", "black"),
+                     name = "Seed Category")
+```
+
+```{r}
+generalized_ncaa_performance_data = read.csv("cbb19.csv")
+```
+
+```{r}
+generalized_ncaa_performance_data$POSTSEASON[is.na(generalized_ncaa_performance_data$POSTSEASON)] <- "Missed Tournament"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "Champions"] <- "Sweet 16"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "2ND"] <- "Sweet 16"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "F4"] <- "Sweet 16"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "E8"] <- "Sweet 16"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "S16"] <- "Sweet 16"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "R32"] <- "Made Tournament"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "R64"] <- "Made Tournament"
+generalized_ncaa_performance_data$POSTSEASON[generalized_ncaa_performance_data$POSTSEASON == "R68"] <- "Made Tournament"
+```
+
+```{r}
+ggplot(generalized_ncaa_performance_data, aes(x = WAB)) +
+  geom_density(aes(color = POSTSEASON, fill = POSTSEASON), alpha = 0.5) +
+  theme_minimal() +
+  labs(x = "Wins Above Bubble",
+       y = "Density") +
+  ggtitle("Density of Wins Above Bubble by Performance in 2019 NCAA Tournament") +
+  scale_fill_manual(breaks = c("Sweet 16", "Made Tournament", "Missed Tournament"), 
+                     values = c("green3", "dodgerblue1", "gray1"),
+                    name = "Performance") +
+  scale_color_manual(breaks = c("Sweet 16", "Made Tournament", "Missed Tournament"), 
+                     values = c("black", "black", "black"),
+                    name = "Performance")
+```
+
